@@ -1,0 +1,21 @@
+[reddit] #limit optional
+username = "TheGhostOfInky"
+#limit = 10
+
+[resolution] #defaults to 400x600
+width = 1920
+height = 1080
+
+[effects] #all optional
+bg_color = "#141414"
+color_map = "winter"
+#font = "font-path"
+#mask = "mask-path"
+
+[stopwords] #1 language required, symbols are used to slice strings, defaults to empty array
+languages = ["english"]
+symbols = [
+    "https", "www", "en.", ".com", ".org",
+    "[","|", "?", "!", '"', ":", ".", "*",
+    "(", ")", "-", "\\", "^", ",", "{", "}",
+    "[", "]", "''", "&", ";", "#", "/"]

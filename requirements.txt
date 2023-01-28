@@ -1,5 +1,7 @@
 nltk>=3.7
 numpy>=1.23.3
 Pillow>=9.2.0
-psaw>=0.1.0
-wordcloud>=1.8.2.2
+pmaw>=3.0.0
+tomli >= 2.0.0; python_version < '3.11'
+git+https://github.com/amueller/word_cloud.git; python_version >= '3.11'
+wordcloud; python_version < '3.11'

@@ -1,42 +1,45 @@
-import nltk,string,numpy,os
-from psaw import PushshiftAPI
+import nltk, string, numpy, os
+from typing import Optional, List, Dict
+from html import unescape
+from pmaw import PushshiftAPI
 from PIL import Image
 from wordcloud import WordCloud
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
 
-#Parameters definition
-AUTHOR = "TheGhostOfInky"  #Reddit username, "u/" ommited
-MASK = None                #Absolute path to mask image
-RESOLUTION = (1920,1080)   #(width,height)
-FONT = None                #Absolute path to font
-BG_COLOR = "#141414"       #Hex string
-COLOR_MAP = "winter"       #Matplotlib colormap
+# Loads parameters.toml
+with open("parameters.toml", "rb") as f:
+    params: dict = tomllib.load(f)
 
-#Get and parse all comments
+# Get and parse all comments
 pshift = PushshiftAPI()
+# Parse author and limit from parameters file
+author: str = params["reddit"]["username"]
+limit: Optional[int] = params["reddit"].get("limit", None)
 
-all_comments = list(pshift.search_comments(author=AUTHOR,limit=None))
+all_comments = list(pshift.search_comments(author=author, limit=limit))
 
-parsed_comments = [{
-    "body": x[-1]["body"],
-    "karma": x[-1]["score"]
+parsed_comments: List[Dict] = [{
+    "body": x["body"],
+    "karma": x["score"]
 } for x in all_comments]
 
-#Gets stopwords for languages in use
-stopwords = set(
-    nltk.corpus.stopwords.words("english")
-    #nltk.corpus.stopwords.words("romanian")
-    )
+# Gets stopwords for languages in use
+stopwords: set[str] = set(*[nltk.corpus.stopwords.words(x)
+                          for x in params["stopwords"]["languages"]])
 
-data = {}
+data: dict[str, int] = {}
 
-#Parses words in comments, removing ponctuation and control characters
+# Parses words in comments, removing ponctuation and control characters
 for comm in parsed_comments:
 
-    text = comm["body"]
-    text.translate(str.maketrans("","",string.punctuation))
+    text: str = unescape(comm["body"])
+    text.translate(str.maketrans("", "", string.punctuation))
 
-    for chr in ["&amp;#x200B","|","?","!","\"",":",".","*","(",")","-","\\","^",",","{","}","[","]","''","&",";","#"]:
-        text = text.replace(chr,"")
+    for chr in params["stopwords"].get("symbols", []):
+        text = text.replace(chr, " ")
 
     words: list[str] = text.lower().split()
 
@@ -44,27 +47,28 @@ for comm in parsed_comments:
 
         if word in stopwords:
             continue
-        
+
         if len(word) < 2:
             continue
 
-        data[word] = data.get(word,0) + comm["karma"]
+        data[word] = data.get(word, 0) + comm["karma"]
 
-#Creates mask from image
-mask = numpy.array(Image.open(MASK)) if MASK else None
+# Creates mask from image
+mask_path: Optional[str] = params["effects"].get("mask", None)
+mask = numpy.array(Image.open(mask_path)) if mask_path else None
 
-#Initializes wordcloud with provided parameters and outputs to file
+# Initializes wordcloud with provided parameters and outputs to file
 wc = WordCloud(
-    font_path=FONT,
-    background_color=BG_COLOR,
-    height=RESOLUTION[1],
-    width=RESOLUTION[0],
+    font_path=params["effects"].get("font", None),
+    background_color=params["effects"].get("bg_color", None),
+    height=params["resolution"].get("height", 400),
+    width=params["resolution"].get("width", 600),
     mask=mask,
-    colormap=COLOR_MAP
+    colormap=params["effects"].get("color_map", None)
 )
 
 wc.generate_from_frequencies(data)
 
-os.makedirs("./image",exist_ok=True)
+os.makedirs("./image", exist_ok=True)
 
-wc.to_file(f"./image/{AUTHOR}{'_mask' if MASK else ''}_image.png")
+wc.to_file(f"./image/{author}{'_mask' if mask_path else ''}_image.png")
