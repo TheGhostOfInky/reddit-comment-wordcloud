@@ -1,4 +1,5 @@
 import nltk, string, numpy, os
+from itertools import chain
 from typing import Optional, List, Dict
 from html import unescape
 from pmaw import PushshiftAPI
@@ -27,8 +28,10 @@ parsed_comments: List[Dict] = [{
 } for x in all_comments]
 
 # Gets stopwords for languages in use
-stopwords: set[str] = set(*[nltk.corpus.stopwords.words(x)
-                          for x in params["stopwords"]["languages"]])
+full_stopwords = [nltk.corpus.stopwords.words(x)
+                    for x in params["stopwords"]["languages"]]
+
+stopwords: set[str] = set(chain(*full_stopwords))
 
 data: dict[str, int] = {}
 
@@ -59,16 +62,16 @@ mask = numpy.array(Image.open(mask_path)) if mask_path else None
 
 # Initializes wordcloud with provided parameters and outputs to file
 wc = WordCloud(
-    font_path=params["effects"].get("font", None),
-    background_color=params["effects"].get("bg_color", None),
-    height=params["resolution"].get("height", 400),
-    width=params["resolution"].get("width", 600),
-    mask=mask,
-    colormap=params["effects"].get("color_map", None)
+    font_path = params["effects"].get("font", None),
+    background_color = params["effects"].get("bg_color", None),
+    height = params["resolution"].get("height", 400),
+    width = params["resolution"].get("width", 600),
+    mask = mask,
+    colormap = params["effects"].get("color_map", None)
 )
 
 wc.generate_from_frequencies(data)
 
-os.makedirs("./image", exist_ok=True)
+os.makedirs("./image", exist_ok = True)
 
 wc.to_file(f"./image/{author}{'_mask' if mask_path else ''}_image.png")
