@@ -56,6 +56,9 @@ for comm in parsed_comments:
 
         data[word] = data.get(word, 0) + comm["karma"]
 
+if len(data.keys()) < 1:
+    raise ValueError("No words found to plot the wordcloud")
+
 # Creates mask from image
 mask_path: Optional[str] = params["effects"].get("mask", None)
 mask = numpy.array(Image.open(mask_path)) if mask_path else None
